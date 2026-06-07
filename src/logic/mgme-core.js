@@ -2,8 +2,9 @@ import MGMEReference from "../utils/mgme-reference";
 import MGMECommon from "../utils/mgme-common";
 import MGMEOracleUtils from "../utils/mgme-oracle-utils";
 import MGMEChatJournal from "../utils/mgme-chat-journal";
+import {DEFAULT_PANEL_KEYS, panelChoices} from "../app/panel-registry";
 
-const {Dialog} = foundry.appv1.api;
+const {DialogV2} = foundry.applications.api;
 const {renderTemplate} = foundry.applications.handlebars;
 
 export default class MGMECore {
@@ -23,13 +24,27 @@ export default class MGMECore {
       name: game.i18n.localize('MGME.SettingsPanelKeyName'),
       hint: game.i18n.localize('MGME.SettingsPanelKeyHint'),
       scope: 'client',
-      config: true,
+      config: false,
       type: String,
-      choices: MGMEReference.MYTHIC_PANELS,
-      default: 'mgme_2e',
-      onChange: (panelKey) => {
-        game.modules.get('mythic-gme-tools').api.mgmeResetRuleDefaults(panelKey);
-        game.modules.get('mythic-gme-tools').api.mgmeLaunchPanel()
+      choices: {
+        'nopanel': 'Disabled',
+        ...panelChoices()
+      },
+      default: 'mgme_2e'
+    });
+
+    game.settings.register('mythic-gme-tools', 'panelKeys', {
+      name: game.i18n.localize('MGME.SettingsPanelKeyName'),
+      hint: game.i18n.localize('MGME.SettingsPanelKeyHint'),
+      scope: 'client',
+      config: false,
+      type: Array,
+      default: [...DEFAULT_PANEL_KEYS],
+      onChange: (panelKeys) => {
+        if (panelKeys?.includes('mgme_2e')) {
+          game.modules.get('mythic-gme-tools').api.mgmeResetRuleDefaults('mgme_2e');
+        }
+        game.modules.get('mythic-gme-tools').api.mgmeLaunchPanel();
       }
     });
 
@@ -241,11 +256,10 @@ export default class MGMECore {
   }
 
   static async mgmeFateChart() {
+    const isMythic2e = game.settings.get('mythic-gme-tools', 'panelKeys')?.includes('mgme_2e');
 
     function generateOutput(question, odds, chaos, result) {
-      const version = game.settings.get('mythic-gme-tools', 'panelKey');
-      const chart = version !== 'mgme_2e' ?
-        MGMEReference.FATE_CHART : MGMEReference.FATE_CHART_2E;
+      const chart = isMythic2e ? MGMEReference.FATE_CHART_2E : MGMEReference.FATE_CHART;
       const target = chart[odds][chaos];
       const ex_yes_bound = target * 0.2;
       const ex_no_bound = 100 - ((100 - target) * 0.2)
@@ -262,9 +276,7 @@ export default class MGMECore {
         outcome = game.i18n.localize('MGME.No');
       }
       const debug = game.settings.get('mythic-gme-tools', 'mythicRollDebug');
-      const oddsKey = version !== 'mgme_2e' ?
-        MGMEReference.ODDS_MAP_CORE[odds] :
-        MGMEReference.ODDS_MAP_2E[odds]['key'];
+      const oddsKey = isMythic2e ? MGMEReference.ODDS_MAP_2E[odds]['key'] : MGMEReference.ODDS_MAP_CORE[odds];
       return `
         ${question ? `<h2>${question} <em>(${game.i18n.localize(oddsKey)})</em></h2>` : `<h2><em>${game.i18n.localize(oddsKey)}</em></h2>`}
         ${debug ? `<div><b>Roll:</b> ${result} Chaos [${chaos}]</div>` : ''}
@@ -272,26 +284,28 @@ export default class MGMECore {
       `
     }
 
-    const version = game.settings.get('mythic-gme-tools', 'panelKey');
-    const fateChartTemplate = version !== 'mgme_2e'  ?
-      './modules/mythic-gme-tools/template/core-fatechart-dialog.hbs' :
-      './modules/mythic-gme-tools/template/core-fatechart-2e-dialog.hbs';
+    const fateChartTemplate = isMythic2e  ?
+      './modules/mythic-gme-tools/template/core-fatechart-2e-dialog.hbs' :
+      './modules/mythic-gme-tools/template/core-fatechart-dialog.hbs';
     const fateChartDialog = await renderTemplate(fateChartTemplate, {chaosRankOptions: new Handlebars.SafeString(MGMECommon._mgmeGenerateChaosRankOptions())});
 
-    let dialogue = new Dialog({
-      title: game.i18n.localize('MGME.FateChart'),
+    await DialogV2.wait({
+      rejectClose: false,
+      window: {title: game.i18n.localize('MGME.FateChart')},
       content: fateChartDialog,
-      render: html => html[0].getElementsByTagName("input").mgme_question.focus(),
-      buttons: {
-        submit: {
-          icon: '<i class="fas fa-comments"></i>',
+      render: (event, dialog) => dialog.element.querySelector("#mgme_question")?.focus(),
+      buttons: [
+        {
+          action: 'submit',
+          icon: 'fas fa-comments',
           label: game.i18n.localize('MGME.ToChat'),
-          callback: async (html) => {
-            const odds = html.find("#mgme_odds").val();
-            const chaos = html.find("#mgme_chaos").val();
+          callback: async (event, button) => {
+            const form = button.form;
+            const odds = form.querySelector("#mgme_odds").value;
+            const chaos = form.querySelector("#mgme_chaos").value;
             const roll = new Roll(`1d100`);
             const result = (await roll.evaluate()).total;
-            let content = generateOutput(html.find("#mgme_question").val()?.trim(), odds, chaos, result);
+            let content = generateOutput(form.querySelector("#mgme_question").value?.trim(), odds, chaos, result);
             let doubles = false;
             if (result > 10) {
               const s = result.toString();
@@ -311,13 +325,11 @@ export default class MGMECore {
               else
                 await MGMEOracleUtils._mgmePrepareOracleQuestion(MGMEReference.PROPS_TEMPLATES.UNEXPECTED_EVENT());
             }
-          }
+          },
+          default: true
         }
-      },
-      default: "submit"
-    })
-
-    dialogue.render(true)
+      ]
+    });
   }
 
   static async mgmeFocusCheck() {
@@ -390,15 +402,17 @@ export default class MGMECore {
   static async mgmeSceneAlteration() {
     const sceneAlterationDialogue = await renderTemplate('./modules/mythic-gme-tools/template/core-scenealteration-dialog.hbs', {chaosRankOptions: new Handlebars.SafeString(MGMECommon._mgmeGenerateChaosRankOptions())});
 
-    let dialogue = new Dialog({
-      title: game.i18n.localize('MGME.SceneAlterationCheck'),
+    await DialogV2.wait({
+      rejectClose: false,
+      window: {title: game.i18n.localize('MGME.SceneAlterationCheck')},
       content: sceneAlterationDialogue,
-      buttons: {
-        submit: {
-          icon: '<i class="fas fa-comments"></i>',
+      buttons: [
+        {
+          action: 'submit',
+          icon: 'fas fa-comments',
           label: game.i18n.localize('MGME.ToChat'),
-          callback: async (html) => {
-            const chaos = parseInt(html.find("#mgme_chaos").val());
+          callback: async (event, button) => {
+            const chaos = parseInt(button.form.querySelector("#mgme_chaos").value);
             const roll = new Roll('1d10');
             const result = (await roll.evaluate()).total;
             const debug = game.settings.get('mythic-gme-tools', 'mythicRollDebug');
@@ -426,13 +440,11 @@ export default class MGMECore {
                 content: `<b style="color: darkgreen">${game.i18n.localize('MGME.SceneNormal')}</b>${debug ? ' ('+result+')' : ''}`
               }, {messageMode: MGMECommon._mgmeGetMessageMode()}).then(chat => {MGMEChatJournal._mgmeLogChatToJournal(chat);return chat});
             }
-          }
+          },
+          default: true
         }
-      },
-      default: "submit"
-    })
-
-    dialogue.render(true)
+      ]
+    });
   }
 
 }

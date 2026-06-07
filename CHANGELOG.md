@@ -1,3 +1,25 @@
+### 2.13.4
+* Fix: Center oracle tab layouts and button grids within the oracle panel
+* Fix: Add scrollable oracle tab content for panels with many controls
+* Fix: Improve oracle panel readability with a compressed parchment background and adjusted text colors
+* Fix: Allow oracle buttons to wrap at word boundaries and grow for narrow panels
+
+### 2.13.3
+* Fix: Make oracle tabs render as a compact single-row tab strip
+* Fix: Preserve user-resized panel dimensions when switching oracle tabs
+
+### 2.13.2
+* Fix: Wrap the tabbed oracle panel template in a single V14 ApplicationV2 root element
+
+### 2.13.1
+* Fix: Prevent ApplicationV2 startup failure when launching the tabbed oracle panel
+* Fix: Make the legacy single-panel setting migration tolerant of different client storage backends
+
+### 2.13.0
+* Feature: Replaced separate oracle panels with one Foundry VTT V14 tabbed oracle panel
+* Feature: Configure popout can select multiple oracle tabs
+* Migration: Converted panel and prompt dialogs to Foundry VTT V14 ApplicationV2 and DialogV2 APIs
+
 ### 2.12.1
 * Compatibility: Minimum Foundry version raised to 14 (2.12.0 requires v14 APIs; prevents v13 clients from auto-updating into a broken install)
 

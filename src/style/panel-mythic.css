@@ -1,5 +1,7 @@
 .mythic-gme-dialog {
     display: grid;
+    width: min(100%, 420px);
+    margin: 0 auto 6px;
     grid-template-areas:
         "fq fq fq xx sa sa sa"
         "re re re xx fo fo fo"
@@ -21,6 +23,8 @@
     grid-template-columns: 28px auto;
     grid-template-rows: auto;
     margin-bottom: 3px;
+    min-height: 32px;
+    width: 100%;
 }
 
 .mythic-gme-dialog__icon--left {
@@ -46,6 +50,11 @@
 
 .mythic-gme-dialog__button-control-label {
     grid-area: label;
+    align-self: center;
+    line-height: 1.15;
+    overflow-wrap: normal;
+    white-space: normal;
+    word-break: normal;
 }
 
 .mgme_panel_fq,
@@ -102,6 +111,8 @@
     text-align: center;
     font-size: 1rem;
     margin: 3px 6px 0 6px;
+    color: #2f2a23;
+    text-shadow: none;
 }
 
 .mgme_panel_ci {
@@ -115,6 +126,8 @@
     margin: auto;
     text-align: center;
     font-size: 2rem;
+    color: #2f2a23;
+    text-shadow: none;
 }
 
 .mgme_panel_cd {
@@ -141,7 +154,17 @@
 #mgme_panel_cd {
     height: 100%;
     font-size: 1.25rem;
-    padding-right: 15px;
+    padding: 0;
+}
+
+#mgme_panel_ci > button,
+#mgme_panel_cd > button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
 }
 
 #mgme_panel_ci button,
@@ -182,4 +205,141 @@
 
 #gum_panel_window {
     min-width: 470px;
+}
+
+.mgme-oracle-tabs {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 0;
+    margin: -8px -8px 8px -8px;
+    padding: 4px 6px 0;
+    border-bottom: 1px solid var(--color-border-light-primary);
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.mgme-oracle-tabs .mgme-tab-link {
+    flex: 0 1 auto;
+    max-width: 140px;
+    min-width: 58px;
+    padding: 3px 8px 4px;
+    border: 1px solid var(--color-border-light-primary);
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    margin-bottom: -1px;
+    background: rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+    color: #2f2a23;
+    text-shadow: none;
+}
+
+.mgme-oracle-tabs .mgme-tab-link.active {
+    background: var(--color-bg);
+    border-color: var(--color-border-highlight);
+    border-bottom-color: var(--color-bg);
+    color: #2f2a23;
+    text-shadow: none;
+}
+
+.mgme-oracle-tabs__content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+#mgme_oracle_panel_window .window-content {
+    background: url("./icons/oracle-parchment-background.webp") repeat;
+    overflow: hidden;
+}
+
+.mgme-oracle-panel {
+    display: flex;
+    flex-direction: column;
+    background: url("./icons/oracle-parchment-background.webp") repeat;
+    height: 100%;
+    min-height: 0;
+}
+
+.mgme-oracle-tab h5,
+.mgme-oracle-tab label,
+.mgme-oracle-tab td > div {
+    color: #2f2a23;
+    text-shadow: none;
+}
+
+.mgme-oracle-tab a:not(.mgme-tab-link) {
+    color: #5b3a16;
+}
+
+.mgme-oracle-tab button,
+.mgme-oracle-tab button * {
+    color: #f5f2e8 !important;
+}
+
+.mgme-oracle-tab:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.mgme-oracle-tab {
+    --mgme-oracle-tab-width: 420px;
+}
+
+.mgme-oracle-tab[data-tab="pum8_core"] {
+    --mgme-oracle-tab-width: 500px;
+}
+
+.mgme-oracle-tab[data-tab="sum7_core"],
+.mgme-oracle-tab[data-tab="gum2_core"] {
+    --mgme-oracle-tab-width: 470px;
+}
+
+.mgme-oracle-tab > div {
+    width: min(100%, var(--mgme-oracle-tab-width));
+    margin: 0 auto;
+}
+
+.mgme-oracle-tab table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.mgme-oracle-tab .spaced button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    height: auto;
+    line-height: 1.15;
+    overflow-wrap: normal;
+    padding-block: 3px;
+    text-align: center;
+    white-space: normal;
+    word-break: normal;
+    width: 100%;
+}
+
+.mgme-oracle-tab[hidden] {
+    display: none;
+}
+
+.mgme-configure-tabs {
+    display: grid;
+    gap: 6px;
+}
+
+.mgme-configure-tabs__choice {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }

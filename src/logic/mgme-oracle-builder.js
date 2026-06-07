@@ -1,7 +1,7 @@
 import MGMECommon from "../utils/mgme-common";
 import MGMEChatJournal from "../utils/mgme-chat-journal";
 
-const {Dialog} = foundry.appv1.api;
+const {DialogV2} = foundry.applications.api;
 const {renderTemplate} = foundry.applications.handlebars;
 
 export default class MGMEOracleBuilder {
@@ -10,15 +10,17 @@ export default class MGMEOracleBuilder {
     if (!game.tables.contents.length) {ui.notifications.warn(game.i18n.localize('MGME.WarnNoTables')); return}
     const builderDialog = await renderTemplate('./modules/mythic-gme-tools/template/extras-oraclebuilder-dialog.hbs', {})
 
-    let dialogue = new Dialog({
-      title: game.i18n.localize('MGME.OracleBuilder'),
+    await DialogV2.wait({
+      rejectClose: false,
+      window: {title: game.i18n.localize('MGME.OracleBuilder')},
       content: builderDialog,
-      render: function (html) {
+      render: function (event, dialog) {
+        const root = dialog.element;
         const entriesOpen = 1; // Configurable???
         const lastOracle = game.user.getFlag('mythic-gme-tools', 'mgmeLastCustomOracle');
         if (lastOracle) {
-          html.find(`#mgme_question_target`).val(lastOracle.name);
-          html.find("#mgme_question_flavor").prop('checked', lastOracle.askFlavor);
+          root.querySelector(`#mgme_question_target`).value = lastOracle.name;
+          root.querySelector("#mgme_question_flavor").checked = lastOracle.askFlavor;
         }
         let i = 1;
         while (i <= 5) {
@@ -26,7 +28,7 @@ export default class MGMEOracleBuilder {
           const lastOracleTable = lastOracle?.props[i-1]?.table ?? '';
           const lastOracleDraws = lastOracle?.props[i-1]?.draws ?? 1;
           let cls = (i <= entriesOpen || lastOracleLabel.length) ? '' : 'stat-hidden';
-          html.find("#mgme_builder_container").append(
+          root.querySelector("#mgme_builder_container").insertAdjacentHTML('beforeend',
             `
           <div id="entries_${i}" class="${cls}">
             <input id="mgme_builder_label_${i}" value="${lastOracleLabel}" style="margin-bottom:10px;width:110px;height:25px;" placeholder="Label #${i}"/>
@@ -42,31 +44,33 @@ export default class MGMEOracleBuilder {
           </div>
           `
           )
-          const tableEntries = html.find(`#mgme_builder_table_${i}`);
+          const tableEntries = root.querySelector(`#mgme_builder_table_${i}`);
           const mythicTables = game.tables.contents.map(t => t.name);
           mythicTables.sort()
-          mythicTables.forEach(t => tableEntries.append(`<option value="${t}" ${lastOracleTable === t ? 'selected' : ''}>${t}</option>`));
+          mythicTables.forEach(t => tableEntries.insertAdjacentHTML('beforeend', `<option value="${t}" ${lastOracleTable === t ? 'selected' : ''}>${t}</option>`));
           i += 1;
         }
-        html[0].getElementsByTagName("input").mgme_question_target.focus();
+        root.querySelector("#mgme_question_target")?.focus();
       },
-      buttons: {
-        test: {
-          icon: '<i class="fas fa-comments"></i>',
+      buttons: [
+        {
+          action: 'test',
+          icon: 'fas fa-comments',
           label: game.i18n.localize('MGME.TestOracle'),
-          callback: (html) => {
-            const oracle = MGMEOracleBuilder._mgmeOracleBuilderParse(html);
+          callback: (event, button) => {
+            const oracle = MGMEOracleBuilder._mgmeOracleBuilderParse(button.form);
             if (oracle) {
               oracle.test = true;
               MGMEOracleBuilder.mgmePrepareCustomOracleQuestion(oracle);
             }
           }
         },
-        toMacro: {
-          icon: '<i class="fas fa-save"></i>',
+        {
+          action: 'toMacro',
+          icon: 'fas fa-save',
           label: game.i18n.localize('MGME.SaveOracle'),
-          callback: (html) => {
-            const oracle = MGMEOracleBuilder._mgmeOracleBuilderParse(html);
+          callback: (event, button) => {
+            const oracle = MGMEOracleBuilder._mgmeOracleBuilderParse(button.form);
             if (oracle) {
               const command = `game.modules.get('mythic-gme-tools').api.mgmePrepareCustomOracleQuestion(${JSON.stringify(oracle)});`;
               Macro.create({name: oracle.name, type: 'script', command: command, img: 'icons/svg/cowled.svg'});
@@ -74,57 +78,57 @@ export default class MGMEOracleBuilder {
             }
           }
         }
-      },
-      default: "test"
-    })
-    dialogue.render(true)
+      ],
+      default: 'test'
+    });
   }
 
   /** MACRO */
   static async mgmePrepareCustomOracleQuestion(oracle) {
     if (oracle.askFlavor) {
       const questionDialog = await renderTemplate('./modules/mythic-gme-tools/template/extras-customoracle-dialog.hbs', {})
-      let dialogue = new Dialog({
-        title: oracle.name,
+      await DialogV2.wait({
+      rejectClose: false,
+        window: {title: oracle.name},
         content: questionDialog,
-        render: (html) => html[0].getElementsByTagName("input").mgme_custom_oracle_question.focus(),
-        buttons: {
-          submit: {
-            icon: '<i class="fas fa-comments"></i>',
+        render: (event, dialog) => dialog.element.querySelector("#mgme_custom_oracle_question")?.focus(),
+        buttons: [
+          {
+            action: 'submit',
+            icon: 'fas fa-comments',
             label: game.i18n.localize('MGME.ToChat'),
-            callback: (html) => {
-              let text = html[0].getElementsByTagName("input").mgme_custom_oracle_question.value;
+            callback: (event, button) => {
+              let text = button.form.querySelector("#mgme_custom_oracle_question").value;
               MGMEOracleBuilder._mgmeGetCustomOracleAnswers(oracle, text)
-            }
+            },
+            default: true
           }
-        },
-        default: "submit"
-      })
-      dialogue.render(true)
+        ]
+      });
     } else {
       MGMEOracleBuilder._mgmeGetCustomOracleAnswers(oracle)
     }
   }
 
-  static _mgmeOracleBuilderParse(html) {
-    const question = html.find(`#mgme_question_target`).val()?.trim();
-    const questionFlavor = html.find("#mgme_question_flavor").prop('checked');
+  static _mgmeOracleBuilderParse(form) {
+    const question = form.querySelector(`#mgme_question_target`).value?.trim();
+    const questionFlavor = form.querySelector("#mgme_question_flavor").checked;
     if (!question)
       return;
     const oracle = {name: question, askFlavor: questionFlavor, props: []};
     let i = 0;
     while (i < 5) {
       i += 1;
-      if (html.find(`#entries_${i}`).hasClass('stat-hidden'))
+      if (form.querySelector(`#entries_${i}`).classList.contains('stat-hidden'))
         continue
-      const question_label = html.find(`#mgme_builder_label_${i}`).val();
-      const question_table = html.find(`#mgme_builder_table_${i}`).val();
+      const question_label = form.querySelector(`#mgme_builder_label_${i}`).value;
+      const question_table = form.querySelector(`#mgme_builder_table_${i}`).value;
       if (!question_label.length || !question_table || question_table === 'None')
         continue;
       oracle.props.push({
         label: question_label,
         table: question_table,
-        draws: parseInt(html.find(`#mgme_builder_draws_${i}`).val())
+        draws: parseInt(form.querySelector(`#mgme_builder_draws_${i}`).value)
       })
     }
     if (!oracle.props.length)

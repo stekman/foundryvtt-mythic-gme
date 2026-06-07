@@ -2,7 +2,7 @@ import "../style/oracle-chat.css";
 import MGMEChatJournal from "./mgme-chat-journal";
 import MGMECommon from "./mgme-common";
 
-const {Dialog} = foundry.appv1.api;
+const {DialogV2} = foundry.applications.api;
 
 export default class MGMEOracleUtils {
 
@@ -224,25 +224,24 @@ export default class MGMEOracleUtils {
       </div>
       </form>
     `
-    let dialogue = new Dialog({
-      title: label,
+    await DialogV2.wait({
+      rejectClose: false,
+      window: {title: label},
       content: questionDialog,
-      render: async function (html) {
-        html[0].getElementsByTagName("input").mgme_re_question.focus();
-      },
-      buttons: {
-        submit: {
-          icon: '<i class="fas fa-comments"></i>',
+      render: (event, dialog) => dialog.element.querySelector("#mgme_re_question")?.focus(),
+      buttons: [
+        {
+          action: 'submit',
+          icon: 'fas fa-comments',
           label: game.i18n.localize('MGME.ToChat'),
-          callback: (html) => {
-            const title = html.find("#mgme_re_question").val().trim();
+          callback: (event, button) => {
+            const title = button.form.querySelector("#mgme_re_question").value.trim();
             oracleCallback(title)
-          }
+          },
+          default: true
         }
-      },
-      default: "submit"
-    })
-    dialogue.render(true)
+      ]
+    });
   }
 
   static async _mgmeBuildMythicDialog(questionProps, baseChat) {
@@ -261,29 +260,32 @@ export default class MGMEOracleUtils {
       </div>
       </form>
     `
-    let dialogue = new Dialog({
-      title: questionProps.label,
+    await DialogV2.wait({
+      rejectClose: false,
+      window: {title: questionProps.label},
       content: questionDialog,
-      render: async function (html) {
+      render: async function (event, dialog) {
         if (questionProps.useFocusTable) {
-          const eFocusElement = $("#mgme_re_efocus");
+          const eFocusElement = dialog.element.querySelector("#mgme_re_efocus");
           const focusTableName = game.settings.get('mythic-gme-tools', 'focusTable');
-          eFocusElement.append(`<option value="Random">${focusTableName}</option>`);
+          eFocusElement.insertAdjacentHTML('beforeend', `<option value="Random">${focusTableName}</option>`);
           const focusResults = (await MGMECommon._mgmeFindTableByName(focusTableName)).results.contents.map(c => c.description);
           focusResults.forEach(focus => {
-            eFocusElement.append(`<option value="${focus}">${focus}</option>`);
+            eFocusElement.insertAdjacentHTML('beforeend', `<option value="${focus}">${focus}</option>`);
           });
         }
-        html[0].getElementsByTagName("input").mgme_re_question.focus();
+        dialog.element.querySelector("#mgme_re_question")?.focus();
       },
-      buttons: {
-        submit: {
-          icon: '<i class="fas fa-comments"></i>',
+      buttons: [
+        {
+          action: 'submit',
+          icon: 'fas fa-comments',
           label: game.i18n.localize('MGME.ToChat'),
-          callback: (html) => {
-            let text = html[0].getElementsByTagName("input").mgme_re_question.value;
-            const focusValue = $("#mgme_re_efocus");
-            const eventFocus = focusValue.val() === 'Random' ? undefined : (focusValue.val() ?? '_');
+          callback: (event, button) => {
+            let text = button.form.querySelector("#mgme_re_question").value;
+            const focusValue = button.form.querySelector("#mgme_re_efocus");
+            const selectedFocus = focusValue?.value;
+            const eventFocus = selectedFocus === 'Random' ? undefined : (selectedFocus ?? '_');
             MGMEOracleUtils._mgmeSubmitOracleQuestion(
               text.length ? `<h2>${text}</h2>` : '',
               questionProps.label,
@@ -293,12 +295,11 @@ export default class MGMEOracleUtils {
               questionProps.tableSetting2,
               baseChat
             );
-          }
+          },
+          default: true
         }
-      },
-      default: "submit"
-    })
-    dialogue.render(true)
+      ]
+    });
   }
 
   static async _mgmePrepareOracleQuestion(questionProps, baseChat) {

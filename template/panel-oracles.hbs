@@ -1,0 +1,18 @@
+<div class="mgme-oracle-panel">
+  {{#if hasPanels}}
+  <nav class="tabs mgme-oracle-tabs" data-group="mgme-oracles">
+    {{#each panels}}
+      <a class="mgme-tab-link {{#if active}}active{{/if}}" data-tab="{{id}}">{{label}}</a>
+    {{/each}}
+  </nav>
+  <section class="mgme-oracle-tabs__content">
+    {{#each panels}}
+      <div class="tab mgme-oracle-tab {{#if active}}active{{/if}}" data-group="mgme-oracles" data-tab="{{id}}" {{#unless active}}hidden{{/unless}}>
+        {{{content}}}
+      </div>
+    {{/each}}
+  </section>
+  {{else}}
+  <p class="notes">No oracle tabs are enabled. Use the configure button in the title bar to select one or more tabs.</p>
+  {{/if}}
+</div>

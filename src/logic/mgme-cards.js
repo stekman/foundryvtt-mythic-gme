@@ -1,6 +1,6 @@
 import MGMECommon from "../utils/mgme-common";
 
-const {Dialog} = foundry.appv1.api;
+const {DialogV2} = foundry.applications.api;
 const {FilePicker, ImagePopout} = foundry.applications.apps;
 
 export default class MGMECards {
@@ -62,8 +62,10 @@ export default class MGMECards {
       return;
     }
 
-    const dialog = new Dialog({
-      title: dialogTitle,
+    await DialogV2.wait({
+      rejectClose: false,
+      window: {title: dialogTitle, resizable: true},
+      position: {top: 200, left: MGMECards.lastPos},
       content: `
       <div style="height: ${height};">
         <img
@@ -71,19 +73,21 @@ export default class MGMECards {
           src="${path}"
          alt="card"/>
       <div>`,
-      buttons: {
-        share: {
+      buttons: [
+        {
+          action: 'share',
           label: game.i18n.localize('MGME.DeckShow'),
           callback: async () => {
             const ip = new ImagePopout({
               src: path,
               window: {title: "Card", resizable: true}
             });
-            await ip.render(true);
+            await ip.render({force: true});
             ip.shareImage();
           }
         },
-        chat: {
+        {
+          action: 'chat',
           label: game.i18n.localize('MGME.ToChat'),
           callback: async () => {
             if (!ui.sidebar.expanded) {
@@ -99,18 +103,18 @@ export default class MGMECards {
             })
           }
         },
-        reset: {
+        {
+          action: 'reset',
           label: game.i18n.localize('MGME.ShuffleDeck'),
           callback: () => table.reset()
         },
-        close: {
-          label: game.i18n.localize('MGME.DeckClose')
+        {
+          action: 'close',
+          label: game.i18n.localize('MGME.DeckClose'),
+          default: true
         }
-      },
-      default: 'close'
+      ]
     });
-    dialog.options.resizable = true;
-    dialog.render(true, {top: 200, left: MGMECards.lastPos});
     if (MGMECards.lastPos < canvas.app.screen.width - (parseInt(height) / 1.5)*2 - 400)
       MGMECards.lastPos += parseInt(height) / 1.5 + 150;
     else
