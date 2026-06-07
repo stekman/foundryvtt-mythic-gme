@@ -1,7 +1,7 @@
 import MGMEChatJournal from "../utils/mgme-chat-journal";
 import MGMECommon from "../utils/mgme-common";
 
-const {Dialog} = foundry.appv1.api;
+const {DialogV2} = foundry.applications.api;
 const {renderTemplate} = foundry.applications.handlebars;
 
 export default class MGMEChatExtras {
@@ -9,29 +9,33 @@ export default class MGMEChatExtras {
   static async mgmeExportChatToJournal() {
     const defaultJournalName = `${game.i18n.localize('MGME.MythicAdventureLog')}`;
     const exportDialog = await renderTemplate('./modules/mythic-gme-tools/template/extras-exportchat-dialog.hbs', {defaultJournalName: defaultJournalName});
-    let dialogue = new Dialog({
-      title: game.i18n.localize('MGME.ExportAllToJournal'),
+    await DialogV2.wait({
+      rejectClose: false,
+      window: {title: game.i18n.localize('MGME.ExportAllToJournal')},
       content: exportDialog,
-        render: html => {
+        render: (event, dialog) => {
+          const root = dialog.element;
           const lastConfig = game.user.getFlag('mythic-gme-tools', 'mgmeLastExportConfig');
           if (lastConfig) {
-            html.find("#mgme_export_highlight_flavor").prop('checked', lastConfig.highlightFlavor);
-            html.find("#mgme_export_actor_img").prop('checked', lastConfig.actorImg);
-            html.find("#mgme_export_include_meta").prop('checked', lastConfig.includeMeta);
-            html.find("#mgme_export_clear_chat").prop('checked', lastConfig.clearChat);
+            root.querySelector("#mgme_export_highlight_flavor").checked = lastConfig.highlightFlavor;
+            root.querySelector("#mgme_export_actor_img").checked = lastConfig.actorImg;
+            root.querySelector("#mgme_export_include_meta").checked = lastConfig.includeMeta;
+            root.querySelector("#mgme_export_clear_chat").checked = lastConfig.clearChat;
           }
-          html[0].getElementsByTagName("input").mgme_export_journal_name.focus()
+          root.querySelector("#mgme_export_journal_name")?.focus()
         },
-      buttons: {
-        submit: {
-          icon: '<i class="fas fa-comments"></i>',
+      buttons: [
+        {
+          action: 'submit',
+          icon: 'fas fa-comments',
           label: game.i18n.localize('MGME.Export'),
-          callback: (html) => {
-            const journalName = html.find("#mgme_export_journal_name").val()?.trim();
-            const includeTimestamp = html.find("#mgme_export_include_meta").prop('checked');
-            const includeActorImg = html.find("#mgme_export_actor_img").prop('checked');
-            const highlightFlavor = html.find("#mgme_export_highlight_flavor").prop('checked');
-            const clearChat = html.find("#mgme_export_clear_chat").prop('checked');
+          callback: (event, button) => {
+            const form = button.form;
+            const journalName = form.querySelector("#mgme_export_journal_name").value?.trim();
+            const includeTimestamp = form.querySelector("#mgme_export_include_meta").checked;
+            const includeActorImg = form.querySelector("#mgme_export_actor_img").checked;
+            const highlightFlavor = form.querySelector("#mgme_export_highlight_flavor").checked;
+            const clearChat = form.querySelector("#mgme_export_clear_chat").checked;
             let entries = [];
             ui.chat.collection.contents.forEach(chat => {
               entries.push(MGMEChatJournal._mgmeBuildLogChatHtml(chat, includeTimestamp, includeActorImg, highlightFlavor));
@@ -49,23 +53,22 @@ export default class MGMEChatExtras {
                 });
               })
             })
-          }
+          },
+          default: true
         }
-      },
-      default: "submit"
-    })
-    dialogue.render(true)
+      ]
+    });
   }
 
   static async mgmeRenderNPCsList() {
     MGMEChatJournal._mgmeFindOrCreateRolltable('NPCs List', 'Mythic Lists').then(table => {
-      table.sheet.render(true);
+      table.sheet.render({force: true});
     });
   }
 
   static async mgmeRenderThreadsList() {
     MGMEChatJournal._mgmeFindOrCreateRolltable('Threads List', 'Mythic Lists').then(table => {
-      table.sheet.render(true);
+      table.sheet.render({force: true});
     });
   }
 
@@ -86,35 +89,39 @@ export default class MGMEChatExtras {
 
     const formattedChatDialog = await renderTemplate('./modules/mythic-gme-tools/template/extras-formattedchat-dialog.hbs', {})
 
-    let dialogue = new Dialog({
-      title: game.i18n.localize('MGME.FormattedText'),
+    await DialogV2.wait({
+      rejectClose: false,
+      window: {title: game.i18n.localize('MGME.FormattedText')},
       content: formattedChatDialog,
-      render: html => {
+      render: (event, dialog) => {
+        const root = dialog.element;
         const curSpeaker = ChatMessage.getSpeaker();
-        const speakerElement = $("#mgme_format_speaker");
-        speakerElement.append(`<option value="curr_user">${game.user.name}</option>`);
+        const speakerElement = root.querySelector("#mgme_format_speaker");
+        speakerElement.insertAdjacentHTML('beforeend', `<option value="curr_user">${game.user.name}</option>`);
         tokens.forEach(token => {
           if (token.actor)
-            speakerElement.append(`<option value=${token.actor.id} selected>${token.name}</option>`);
+            speakerElement.insertAdjacentHTML('beforeend', `<option value=${token.actor.id} selected>${token.name}</option>`);
         });
-        speakerElement.val(curSpeaker.actor ?? curSpeaker.alias);
-        html[0].getElementsByTagName("input").mgme_format_text.focus()
+        speakerElement.value = curSpeaker.actor ?? curSpeaker.alias;
+        root.querySelector("#mgme_format_text")?.focus()
       },
-      buttons: {
-        submit: {
-          icon: '<i class="fas fa-comments"></i>',
+      buttons: [
+        {
+          action: 'submit',
+          icon: 'fas fa-comments',
           label: game.i18n.localize('MGME.ToChat'),
-          callback: () => {
+          callback: (event, button) => {
+            const form = button.form;
             let message;
-            let color = $("#mgme_format_color").val()?.trim();
+            let color = form.querySelector("#mgme_format_color").value?.trim();
             if (color && color !== '') {
               color = `style="color:${color};"`;
             } else {
               `style="color:inherit;"`;
             }
-            let text = $("#mgme_format_text").val()?.trim();
+            let text = form.querySelector("#mgme_format_text").value?.trim();
             if (!text || text === '') return;
-            switch ($("#mgme_format_style").val()?.trim()) {
+            switch (form.querySelector("#mgme_format_style").value?.trim()) {
               case '':
               case 'normal':
               case undefined: {
@@ -143,7 +150,7 @@ export default class MGMEChatExtras {
               }
             }
 
-            const speakerElementVal = $("#mgme_format_speaker").val()?.trim();
+            const speakerElementVal = form.querySelector("#mgme_format_speaker").value?.trim();
             const selectedSpeaker = speakerElementVal === 'curr_user' ? {alias: game.user.name} : {actor: tokens.find(t => t.actor.id === speakerElementVal).actor.id};
             let chatConfig = {
               content: message,
@@ -151,12 +158,11 @@ export default class MGMEChatExtras {
               whisper: MGMECommon._mgmeGetWhisperMode()
             };
             MGMEChatJournal._mgmeCreateChatAndLog(chatConfig);
-          }
+          },
+          default: true
         }
-      },
-      default: "submit"
-    })
-    dialogue.render(true)
+      ]
+    });
   }
 
   static async _mgmeExternallRollTableRoll(rolls, tableName) {
@@ -164,21 +170,24 @@ export default class MGMEChatExtras {
     const rollTotals = rolls.map(r => r.total);
     const outputRollDialog = await renderTemplate('./modules/mythic-gme-tools/template/extras-externalroll2-dialog.hbs', {rollTotals: rollTotals});
 
-    const firstDialog = new Dialog({
-      title: game.i18n.localize('MGME.ExternalRollTableOutcome'),
+    await DialogV2.wait({
+      rejectClose: false,
+      window: {title: game.i18n.localize('MGME.ExternalRollTableOutcome')},
       content: outputRollDialog,
-      render: html => {
-        $("#mgme_ext_roll_table_name").val(tableName);
-        html[0].getElementsByTagName("input").mgme_ext_roll_outcome.focus();
+      render: (event, dialog) => {
+        dialog.element.querySelector("#mgme_ext_roll_table_name").value = tableName;
+        dialog.element.querySelector("#mgme_ext_roll_outcome")?.focus();
       },
-      buttons: {
-        submit: {
-          icon: '<i class="fas fa-comments"></i>',
+      buttons: [
+        {
+          action: 'submit',
+          icon: 'fas fa-comments',
           label: game.i18n.localize('MGME.ToChat'),
-          callback: () => {
+          callback: (event, button) => {
+            const form = button.form;
             const debug = game.settings.get('mythic-gme-tools', 'mythicRollDebug');
-            const textFlavor = $("#mgme_ext_roll_flavor").val()?.trim();
-            const textOutcome = $("#mgme_ext_roll_outcome").val()?.trim();
+            const textFlavor = form.querySelector("#mgme_ext_roll_flavor").value?.trim();
+            const textOutcome = form.querySelector("#mgme_ext_roll_outcome").value?.trim();
             const whisper = MGMECommon._mgmeGetWhisperMode();
             if (textOutcome.length)
               MGMEChatJournal._mgmeCreateChatAndLog({
@@ -186,31 +195,31 @@ export default class MGMEChatExtras {
                 content: `${textFlavor.length ? `<h2>${textFlavor}</h2>` : ''}${textOutcome}${debug ? ` (${rolls[0].formula} = ${rollTotals})` : ''}`,
                 whisper: whisper
               });
-          }
+          },
+          default: true
         }
-      },
-      default: "submit"
-    })
-    firstDialog.render(true)
+      ]
+    });
   }
 
   static async mgmeExternalRollTable() {
     const externalRollDialog = await renderTemplate('./modules/mythic-gme-tools/template/extras-externalroll1-dialog.hbs', {});
 
-    const firstDialog = new Dialog({
-      title: game.i18n.localize('MGME.ExternalRollTable'),
+    await DialogV2.wait({
+      rejectClose: false,
+      window: {title: game.i18n.localize('MGME.ExternalRollTable')},
       content: externalRollDialog,
-      render: html => {
-        html[0].getElementsByTagName("input").mgme_ext_table_name.focus();
-      },
-      buttons: {
-        submit: {
-          icon: '<i class="fas fa-dice"></i>',
+      render: (event, dialog) => dialog.element.querySelector("#mgme_ext_table_name")?.focus(),
+      buttons: [
+        {
+          action: 'submit',
+          icon: 'fas fa-dice',
           label: 'Roll',
-          callback: async () => {
-            const tableName = $("#mgme_ext_table_name").val()?.trim();
-            const formula = $("#mgme_ext_formula").val()?.trim();
-            const howMany = parseInt($("#mgme_ext_many").val()?.trim());
+          callback: async (event, button) => {
+            const form = button.form;
+            const tableName = form.querySelector("#mgme_ext_table_name").value?.trim();
+            const formula = form.querySelector("#mgme_ext_formula").value?.trim();
+            const howMany = parseInt(form.querySelector("#mgme_ext_many").value?.trim());
             const rolls = [];
             let i = 0;
             while (i < howMany) {
@@ -224,46 +233,49 @@ export default class MGMEChatExtras {
               i += 1;
             }
             MGMEChatExtras._mgmeExternallRollTableRoll(rolls, tableName);
-          }
+          },
+          default: true
         }
-      },
-      default: "submit"
-    })
-    firstDialog.render(true)
+      ]
+    });
   }
 
   static async mgmeFlavoredRollTable() {
     const rollDialog = await renderTemplate('./modules/mythic-gme-tools/template/extras-flavortable-dialog.hbs', {});
     const numEntries = 5;
 
-    const firstDialog = new Dialog({
-      title: game.i18n.localize('MGME.RollTableFlavorTitle'),
+    await DialogV2.wait({
+      rejectClose: false,
+      window: {title: game.i18n.localize('MGME.RollTableFlavorTitle')},
       content: rollDialog,
-      render: html => {
+      render: (event, dialog) => {
+        const root = dialog.element;
         const tables = game.tables.contents.map(t => t.name);
         tables.sort()
         let i = 0;
         while (i < numEntries) {
           i += 1;
-          tables.forEach(t => $("#mgme_table_select_" + i).append(`<option value="${t}">${t}</option>`));
+          tables.forEach(t => root.querySelector("#mgme_table_select_" + i).insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`));
         }
-        html[0].getElementsByTagName("input").mgme_table_question.focus();
+        root.querySelector("#mgme_table_question")?.focus();
       },
-      buttons: {
-        submit: {
-          icon: '<i class="fas fa-comments"></i>',
+      buttons: [
+        {
+          action: 'submit',
+          icon: 'fas fa-comments',
           label: game.i18n.localize('MGME.ToChat'),
-          callback: async () => {
-            const tableQuestion = $("#mgme_table_question").val()?.trim();
+          callback: async (event, button) => {
+            const form = button.form;
+            const tableQuestion = form.querySelector("#mgme_table_question").value?.trim();
             let content = `${tableQuestion.length ? `<h2>${tableQuestion}</h2>` : ''}`;
             const debug = game.settings.get('mythic-gme-tools', 'mythicRollDebug');
             const whisper = MGMECommon._mgmeGetWhisperMode();
             let i = 0;
             while (i < numEntries) {
               i += 1;
-              const selectedTable = $("#mgme_table_select_"+i).val()?.trim();
-              const many = parseInt($("#mgme_table_many_"+i).val()?.trim());
-              const formula = $("#mgme_table_formula_"+i).val()?.trim();
+              const selectedTable = form.querySelector("#mgme_table_select_"+i).value?.trim();
+              const many = parseInt(form.querySelector("#mgme_table_many_"+i).value?.trim());
+              const formula = form.querySelector("#mgme_table_formula_"+i).value?.trim();
               const table = game.tables.contents.find(t => t.name === selectedTable);
               if (selectedTable?.length && table) {
                 content += `<b>${selectedTable}</b>`;
@@ -281,12 +293,11 @@ export default class MGMEChatExtras {
               flavor: game.i18n.localize('MGME.RollTableFlavorTitle'),
               content: content
             });
-          }
+          },
+          default: true
         }
-      },
-      default: "submit"
-    })
-    firstDialog.render(true)
+      ]
+    });
   }
 
 }

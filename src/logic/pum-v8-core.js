@@ -79,25 +79,25 @@ export default class PUMV8Core {
 
   static pumV8RenderAspectsList() {
     MGMEChatJournal._mgmeFindOrCreateRolltable('Game or world elements', 'PUM Plot Nodes').then(table => {
-      PUMV8Core.adjustTable(table, 'MGME.TableResultChoose2e').then(t => t.normalize().then(_ => t.sheet.render(true)));
+      PUMV8Core.adjustTable(table, 'MGME.TableResultChoose2e').then(t => t.normalize().then(_ => t.sheet.render({force: true})));
     });
   }
 
   static pumV8RenderEncountersList() {
     MGMEChatJournal._mgmeFindOrCreateRolltable('Meaningful encounters', 'PUM Plot Nodes').then(table => {
-      PUMV8Core.adjustTable(table, 'MGME.TableResultChoose2e').then(t => t.normalize().then(_ => t.sheet.render(true)));
+      PUMV8Core.adjustTable(table, 'MGME.TableResultChoose2e').then(t => t.normalize().then(_ => t.sheet.render({force: true})));
     });
   }
 
   static pumV8RenderFindsList() {
     MGMEChatJournal._mgmeFindOrCreateRolltable('Things to be found', 'PUM Plot Nodes').then(table => {
-      PUMV8Core.adjustTable(table, 'MGME.TableResultChoose2e').then(t => t.normalize().then(_ => t.sheet.render(true)));
+      PUMV8Core.adjustTable(table, 'MGME.TableResultChoose2e').then(t => t.normalize().then(_ => t.sheet.render({force: true})));
     });
   }
 
   static pumV8RenderQuestionsList() {
     MGMEChatJournal._mgmeFindOrCreateRolltable('Pending questions', 'PUM Plot Nodes').then(table => {
-      PUMV8Core.adjustTable(table, 'MGME.TableResultChoose2e').then(t => t.normalize().then(_ => t.sheet.render(true)));
+      PUMV8Core.adjustTable(table, 'MGME.TableResultChoose2e').then(t => t.normalize().then(_ => t.sheet.render({force: true})));
     });
   }
 

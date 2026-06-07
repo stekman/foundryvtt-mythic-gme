@@ -25,13 +25,13 @@ export default class MGMECore2e {
 
     static mgmeRenderNPCsList2e() {
         MGMEChatJournal._mgmeFindOrCreateRolltable('NPCs List', 'Mythic Lists').then(table => {
-            MGMECore2e.adjustTable(table).then(t => t.normalize().then(_ => t.sheet.render(true)));
+            MGMECore2e.adjustTable(table).then(t => t.normalize().then(_ => t.sheet.render({force: true})));
         });
     }
 
     static mgmeRenderThreadsList2e() {
         MGMEChatJournal._mgmeFindOrCreateRolltable('Threads List', 'Mythic Lists').then(table => {
-            MGMECore2e.adjustTable(table).then(t => t.normalize().then(_ => t.sheet.render(true)));
+            MGMECore2e.adjustTable(table).then(t => t.normalize().then(_ => t.sheet.render({force: true})));
         });
     }
 

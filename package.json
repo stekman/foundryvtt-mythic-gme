@@ -1,6 +1,6 @@
 {
   "name": "foundryvtt-mythic-gme",
-  "version": "2.12.1",
+  "version": "2.13.4",
   "description": "A set of Macros and Random Tables for playing with the Mythic Game Master Emulator",
   "main": "mythic-gme-tools.js",
   "scripts": {
@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/saif-ellafi/foundryvtt-mythic-gme.git"
+    "url": "git+https://github.com/stekman/foundryvtt-mythic-gme.git"
   },
   "keywords": [
     "foundry",
@@ -27,7 +27,7 @@
   "author": "JeansenVaars (Saif Ellafi)",
   "license": "CUSTOM",
   "bugs": {
-    "url": "https://github.com/saif-ellafi/foundryvtt-mythic-gme/issues"
+    "url": "https://github.com/stekman/foundryvtt-mythic-gme/issues"
   },
   "homepage": "https://github.com/saif-ellafi/foundryvtt-mythic-gme",
   "devDependencies": {

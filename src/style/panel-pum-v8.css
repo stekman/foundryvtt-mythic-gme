@@ -1,5 +1,7 @@
 .pum8-dialog {
     display: grid;
+    width: min(100%, 500px);
+    margin: 0 auto 6px;
     grid-template-areas:
         "aspr asp asp xx act act actr"
         "tror tro tro xx thr thr thrr";
@@ -14,6 +16,8 @@
     grid-template-columns: 28px auto;
     grid-template-rows: auto;
     margin-bottom: 3px;
+    min-height: 32px;
+    width: 100%;
 }
 
 .pum8-dialog__icon--left {
@@ -39,6 +43,11 @@
 
 .pum8-dialog__button-control-label {
     grid-area: label;
+    align-self: center;
+    line-height: 1.15;
+    overflow-wrap: normal;
+    white-space: normal;
+    word-break: normal;
 }
 
 .pum8_panel_aspect_setup {

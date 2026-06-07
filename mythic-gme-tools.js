@@ -4,11 +4,15 @@ import MGMEMacroAPI from "./src/mgme-macros";
 
 Hooks.once('ready', () => {
 
+  game.modules.get('mythic-gme-tools').api = MGMEMacroAPI;
+
   MGMECore.initSettings();
   MGMECards.initSettings();
 
-  game.modules.get('mythic-gme-tools').api = MGMEMacroAPI;
-
-  MGMEMacroAPI.mgmeLaunchPanel();
+  MGMEMacroAPI.mgmeMigratePanelKeys().then(() => {
+    if (!game.modules.get('mythic-gme-tools').api.win) {
+      MGMEMacroAPI.mgmeLaunchPanel();
+    }
+  });
 
 });
